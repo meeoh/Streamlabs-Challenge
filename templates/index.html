@@ -14,20 +14,29 @@
     <script type="text/babel">
     class RootComponent extends React.Component {
 
-        constructor() {
+        constructor(props) {
             super()
-            var socket = io.connect('http://' + document.domain + ':' + location.port);
+            var socket = io.connect();
             socket.on('connect', function() {
                 console.log('connected');
             });
+            var details = JSON.parse(props.topVid)
+            socket.emit('join', {
+                id: details.id.videoId
+            })
+            socket.on('comments', (data) => {
+                console.log(data);
+            })
+            details.socket = socket;
+            this.state = details;
         }
 
-        render() {
-            console.log(JSON.parse(this.props.topVid));
-            var id = this.props.topVid.id ? this.props.topVid.id.videoId : '';
 
+        render() {
+            // console.log(JSON.parse(this.props.topVid));
+            var id = this.state.id ? this.state.id.videoId : '';
             return (<div>
-                <iframe width="560" height="315" src="https://www.youtube.com/embed/8XiqrERZo_8?autoplay=1" frameBorder="0" allowFullScreen></iframe>
+                <iframe width="560" height="315" src={`https://www.youtube.com/embed/${id}?autoplay=1`} frameBorder="0" allowFullScreen></iframe>
             </div>);
         }
     }

@@ -6,18 +6,63 @@ import random
 from oauth2client.client import OAuth2WebServerFlow, AccessTokenCredentials
 
 from flask import Flask, render_template, session, request, redirect, url_for, abort, jsonify
-from flask_socketio import SocketIO, emit, send
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 CLIENT_ID = "759997836419-uovn15kki2cshhlc23fdpe9njq1h589k.apps.googleusercontent.com"
 CLIENT_SECRET = 'u5K2AVqwyPQ3pZhFdtlQEjIr'
 
 app = Flask(__name__)
+app.secret_key = 'mysecretKEY'
 socketio = SocketIO(app)
+
+activeRooms = {}
+
+def getComments(id):
+  pass
+  # if id not in activeRooms or activeRooms[id] == 0
+  #   activeRooms.pop(id, None)
+  #   return
+
+  # liveStreamingInfo = youtube.videos().list(
+  #   part="liveStreamingDetails",
+  #   id=id
+  # ).execute()
+  # try:
+  #   liveStreamingInfo = liveStreamingInfo['items'][0]['liveStreamingDetails']['activeLiveChatId']
+  # except:
+  #   print("no livestreaming info")
+
+  # comments = youtube.liveChatMessages().list(
+  #   liveChatId=liveStreamingInfo,
+  #   part="snippet, authorDetails"
+  # ).execute()
+
+  # socketio.emit('comments', "test", room=id)
+
 
 @socketio.on('connect')
 def test_connect():
-  print('connect')
-  emit('connect')
+  print('Client connected')
+
+@socketio.on('disconnect')
+def test_disconnect():
+    print('Client disconnected')
+
+@socketio.on('join')
+def on_join(data):
+  print("joining")
+  # On join of a room. Check if that room is currently an active room.
+  # If its not, add it to the active rooms and start getting comments for it.
+  # If it is, do nothing
+  id = data['id']
+  join_room(id)
+  print(request.sid)
+  if id not in activeRooms:
+    activeRooms[id] = 1
+    getComments(id)
+  else:
+    activeRooms[id] += 1
+# socketio.rooms['']['foobar-room'].
 
 @app.route('/login')
 def login():
@@ -76,14 +121,13 @@ def index():
     type="video",
     videoEmbeddable="true"
   ).execute()
-
   topVid = topVid['items'][0]
   id = topVid['id']['videoId']
 
-  liveStreamingInfo = youtube.videos().list(
-    part="liveStreamingDetails",
-    id=id
-  ).execute()
+  # liveStreamingInfo = youtube.videos().list(
+  #   part="liveStreamingDetails",
+  #   id=id
+  # ).execute()
   # try:
   #   liveStreamingInfo = liveStreamingInfo['items'][0]['liveStreamingDetails']['activeLiveChatId']
   # except:
@@ -99,6 +143,5 @@ def index():
   return render_template("index.html", topVid=json.dumps(topVid))
 
 if __name__ == '__main__':
-  app.secret_key = 'hello world'
   app.run(host='0.0.0.0')
   socketio.run(app)
