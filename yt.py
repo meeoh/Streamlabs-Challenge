@@ -19,11 +19,6 @@ def test_connect():
   print('connect')
   emit('connect')
 
-@socketio.on('test')
-def test():
-  print('test')
-  emit('test', {}, broadcast=True)
-
 @app.route('/login')
 def login():
   flow = OAuth2WebServerFlow(client_id=CLIENT_ID,
