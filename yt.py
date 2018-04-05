@@ -26,7 +26,7 @@ def getComments(id, youtube, credentials, pageToken=""):
     activeRooms.pop(id, None)
     return
 
-  if credentials not in activeRooms[id]:
+  if not any(c.access_token == credentials.access_token for c in activeRooms[id]):
     print("USING SOMEONE ELSES CREDS")
     credentials = activeRooms[id][0]
     http = httplib2.Http()
@@ -66,6 +66,7 @@ def test_disconnect():
     for room in activeRooms:
       for c in activeRooms[room]:
         if c.access_token == credentials.access_token:
+          global activeRooms
           print("FOUND AND REMOVING")
           activeRooms[room].remove(c)
 
@@ -79,7 +80,7 @@ def on_join(data):
   id = data['id']
   join_room(id)
   credentials = AccessTokenCredentials(session['credentials'], 'user-agent-value')
-
+  global activeRooms
   if id not in activeRooms:
     activeRooms[id] = [credentials]
 
