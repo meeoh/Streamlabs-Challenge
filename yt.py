@@ -1,19 +1,3 @@
-#!/usr/bin/python2.7
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2012 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 import json
 from apiclient.discovery import build_from_document, build
 import httplib2
@@ -22,12 +6,23 @@ import random
 from oauth2client.client import OAuth2WebServerFlow, AccessTokenCredentials
 
 from flask import Flask, render_template, session, request, redirect, url_for, abort, jsonify
+from flask_socketio import SocketIO, emit, send
 
 CLIENT_ID = "759997836419-uovn15kki2cshhlc23fdpe9njq1h589k.apps.googleusercontent.com"
 CLIENT_SECRET = 'u5K2AVqwyPQ3pZhFdtlQEjIr'
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
+@socketio.on('connect')
+def test_connect():
+  print('connect')
+  emit('connect')
+
+@socketio.on('test')
+def test():
+  print('test')
+  emit('test', {}, broadcast=True)
 
 @app.route('/login')
 def login():
@@ -94,20 +89,21 @@ def index():
     part="liveStreamingDetails",
     id=id
   ).execute()
-  try:
-    liveStreamingInfo = liveStreamingInfo['items'][0]['liveStreamingDetails']['activeLiveChatId']
-  except:
-    print("no livestreaming info")
+  # try:
+  #   liveStreamingInfo = liveStreamingInfo['items'][0]['liveStreamingDetails']['activeLiveChatId']
+  # except:
+  #   print("no livestreaming info")
 
-  comments = youtube.liveChatMessages().list(
-    liveChatId=liveStreamingInfo,
-    part="snippet, authorDetails"
-  ).execute()
+  # comments = youtube.liveChatMessages().list(
+  #   liveChatId=liveStreamingInfo,
+  #   part="snippet, authorDetails"
+  # ).execute()
 
-  print(comments['items'][0]['authorDetails'])
+  # print(comments['items'][0]['authorDetails'])
 
   return render_template("index.html", topVid=json.dumps(topVid))
 
 if __name__ == '__main__':
   app.secret_key = 'hello world'
   app.run(host='0.0.0.0')
+  socketio.run(app)

@@ -10,14 +10,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.21.1/babel.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.0/socket.io.js"></script>
     <script type="text/babel">
     class RootComponent extends React.Component {
+
+        constructor() {
+            super()
+            var socket = io.connect('http://' + document.domain + ':' + location.port);
+            socket.on('connect', function() {
+                console.log('connected');
+                socket.emit('my event', {data: 'I\'m connected!'});
+            });
+        }
+
         render() {
             console.log(JSON.parse(this.props.topVid));
             var id = this.props.topVid.id ? this.props.topVid.id.videoId : '';
 
             return (<div>
-                <iframe width="560" height="315" src="https://www.youtube.com/embed/8XiqrERZo_8?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/8XiqrERZo_8?autoplay=1" frameBorder="0" allowFullScreen></iframe>
             </div>);
         }
     }
