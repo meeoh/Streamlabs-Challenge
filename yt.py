@@ -2,6 +2,7 @@ import json
 from apiclient.discovery import build_from_document, build
 import httplib2
 import random
+import time
 
 from oauth2client.client import OAuth2WebServerFlow, AccessTokenCredentials
 
@@ -9,6 +10,7 @@ from flask import Flask, render_template, session, request, redirect, url_for, a
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 from keys import CLIENT_ID, CLIENT_SECRET
+from threading import Thread
 
 app = Flask(__name__)
 app.secret_key = 'mysecretKEY'
@@ -16,17 +18,20 @@ socketio = SocketIO(app)
 
 activeRooms = {}
 
-def getComments(id, credentials):
-  credentials = AccessTokenCredentials(credentials, 'user-agent-value')
+def getComments(id, youtube, credentials, pageToken=""):
 
-  http = httplib2.Http()
-  http = credentials.authorize(http)
-
-  youtube = build("youtube", "v3", http=http)
-
+  print("GETTING with token {}".format(pageToken))
   if id not in activeRooms or len(activeRooms[id]) == 0:
+    print("NO USERS")
     activeRooms.pop(id, None)
     return
+
+  if credentials not in activeRooms[id]:
+    print("USING SOMEONE ELSES CREDS")
+    credentials = activeRooms[id][0]
+    http = httplib2.Http()
+    http = credentials.authorize(http)
+    youtube = build("youtube", "v3", http=http)
 
   liveStreamingInfo = youtube.videos().list(
     part="liveStreamingDetails",
@@ -39,11 +44,15 @@ def getComments(id, credentials):
 
   comments = youtube.liveChatMessages().list(
     liveChatId=liveStreamingInfo,
-    part="snippet, authorDetails"
+    part="snippet, authorDetails",
+    pageToken=pageToken
   ).execute()
-  print(comments)
 
+  print("EMITTING TO ROOM {}".format(id))
   socketio.emit('comments', comments, room=id)
+  print("WAITING {}".format(comments['pollingIntervalMillis']/1000.0))
+  time.sleep(comments["pollingIntervalMillis"]/1000.0)
+  getComments(id, youtube, credentials, comments["nextPageToken"])
 
 
 @socketio.on('connect')
@@ -53,10 +62,12 @@ def test_connect():
 @socketio.on('disconnect')
 def test_disconnect():
     print('Client disconnected')
-    sid = request.sid
+    credentials = AccessTokenCredentials(session['credentials'], 'user-agent-value')
     for room in activeRooms:
-      if sid in activeRooms[room]:
-        activeRooms[room].remove(sid)
+      for c in activeRooms[room]:
+        if c.access_token == credentials.access_token:
+          print("FOUND AND REMOVING")
+          activeRooms[room].remove(c)
 
 
 @socketio.on('join')
@@ -67,12 +78,19 @@ def on_join(data):
 #   If it is, do nothing
   id = data['id']
   join_room(id)
-  print(request.sid)
+  credentials = AccessTokenCredentials(session['credentials'], 'user-agent-value')
+
   if id not in activeRooms:
-    activeRooms[id] = [request.sid]
-    getComments(id, session['credentials'])
+    activeRooms[id] = [credentials]
+
+    http = httplib2.Http()
+    http = credentials.authorize(http)
+
+    youtube = build("youtube", "v3", http=http)
+    thread1 = Thread(target=getComments, args = (id, youtube, credentials))
+    thread1.start()
   else:
-    activeRooms[id].append(request.sid)
+    activeRooms[id].append(credentials)
 
 @app.route('/login')
 def login():
