@@ -8,8 +8,7 @@ from oauth2client.client import OAuth2WebServerFlow, AccessTokenCredentials
 from flask import Flask, render_template, session, request, redirect, url_for, abort, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
-CLIENT_ID = "759997836419-uovn15kki2cshhlc23fdpe9njq1h589k.apps.googleusercontent.com"
-CLIENT_SECRET = 'u5K2AVqwyPQ3pZhFdtlQEjIr'
+from keys import CLIENT_ID, CLIENT_SECRET
 
 app = Flask(__name__)
 app.secret_key = 'mysecretKEY'
@@ -17,27 +16,34 @@ socketio = SocketIO(app)
 
 activeRooms = {}
 
-def getComments(id):
-  pass
-  # if id not in activeRooms or activeRooms[id] == 0
-  #   activeRooms.pop(id, None)
-  #   return
+def getComments(id, credentials):
+  credentials = AccessTokenCredentials(credentials, 'user-agent-value')
 
-  # liveStreamingInfo = youtube.videos().list(
-  #   part="liveStreamingDetails",
-  #   id=id
-  # ).execute()
-  # try:
-  #   liveStreamingInfo = liveStreamingInfo['items'][0]['liveStreamingDetails']['activeLiveChatId']
-  # except:
-  #   print("no livestreaming info")
+  http = httplib2.Http()
+  http = credentials.authorize(http)
 
-  # comments = youtube.liveChatMessages().list(
-  #   liveChatId=liveStreamingInfo,
-  #   part="snippet, authorDetails"
-  # ).execute()
+  youtube = build("youtube", "v3", http=http)
 
-  # socketio.emit('comments', "test", room=id)
+  if id not in activeRooms or len(activeRooms[id]) == 0:
+    activeRooms.pop(id, None)
+    return
+
+  liveStreamingInfo = youtube.videos().list(
+    part="liveStreamingDetails",
+    id=id
+  ).execute()
+  try:
+    liveStreamingInfo = liveStreamingInfo['items'][0]['liveStreamingDetails']['activeLiveChatId']
+  except:
+    print("no livestreaming info")
+
+  comments = youtube.liveChatMessages().list(
+    liveChatId=liveStreamingInfo,
+    part="snippet, authorDetails"
+  ).execute()
+  print(comments)
+
+  socketio.emit('comments', comments, room=id)
 
 
 @socketio.on('connect')
@@ -47,22 +53,26 @@ def test_connect():
 @socketio.on('disconnect')
 def test_disconnect():
     print('Client disconnected')
+    sid = request.sid
+    for room in activeRooms:
+      if sid in activeRooms[room]:
+        activeRooms[room].remove(sid)
+
 
 @socketio.on('join')
 def on_join(data):
   print("joining")
-  # On join of a room. Check if that room is currently an active room.
-  # If its not, add it to the active rooms and start getting comments for it.
-  # If it is, do nothing
+#   On join of a room. Check if that room is currently an active room.
+#   If its not, add it to the active rooms and start getting comments for it.
+#   If it is, do nothing
   id = data['id']
   join_room(id)
   print(request.sid)
   if id not in activeRooms:
-    activeRooms[id] = 1
-    getComments(id)
+    activeRooms[id] = [request.sid]
+    getComments(id, session['credentials'])
   else:
-    activeRooms[id] += 1
-# socketio.rooms['']['foobar-room'].
+    activeRooms[id].append(request.sid)
 
 @app.route('/login')
 def login():
