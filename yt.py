@@ -5,16 +5,19 @@ import random
 import time
 
 from oauth2client.client import OAuth2WebServerFlow, AccessTokenCredentials
-
 from flask import Flask, render_template, session, request, redirect, url_for, abort, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 from keys import CLIENT_ID, CLIENT_SECRET
 from threading import Thread
+from flask_pymongo import PyMongo
+
 
 app = Flask(__name__)
 app.secret_key = 'mysecretKEY'
 socketio = SocketIO(app)
+mongo = PyMongo(app)
+
 
 activeRooms = {}
 
@@ -47,9 +50,15 @@ def getComments(id, youtube, credentials, pageToken=""):
     part="snippet, authorDetails",
     pageToken=pageToken
   ).execute()
+  # insert comments['items'] into mongodb, only want author, display text, and current room id
+  with app.app_context():
+    mongo.db.comments.insert_many([{'text': comment['snippet']['displayMessage'], 'author': comment['authorDetails']['displayName'], 'channel': id} for comment in comments['items']])
+  comments['items'] = list(reversed(comments['items']))
+
 
   print("EMITTING TO ROOM {}".format(id))
   socketio.emit('comments', comments, room=id)
+  socketio.sleep(0)
   print("WAITING {}".format(comments['pollingIntervalMillis']/1000.0))
   time.sleep(comments["pollingIntervalMillis"]/1000.0)
   getComments(id, youtube, credentials, comments["nextPageToken"])
@@ -61,12 +70,12 @@ def test_connect():
 
 @socketio.on('disconnect')
 def test_disconnect():
+    global activeRooms
     print('Client disconnected')
     credentials = AccessTokenCredentials(session['credentials'], 'user-agent-value')
     for room in activeRooms:
       for c in activeRooms[room]:
         if c.access_token == credentials.access_token:
-          global activeRooms
           print("FOUND AND REMOVING")
           activeRooms[room].remove(c)
 
@@ -74,9 +83,9 @@ def test_disconnect():
 @socketio.on('join')
 def on_join(data):
   print("joining")
-#   On join of a room. Check if that room is currently an active room.
-#   If its not, add it to the active rooms and start getting comments for it.
-#   If it is, do nothing
+  #  On join of a room. Check if that room is currently an active room.
+  #  If its not, add it to the active rooms and start getting comments for it.
+  #  If it is, do nothing
   id = data['id']
   join_room(id)
   credentials = AccessTokenCredentials(session['credentials'], 'user-agent-value')

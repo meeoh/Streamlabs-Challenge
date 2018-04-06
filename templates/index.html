@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.21.1/babel.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.0/socket.io.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
     <script type="text/babel">
     class RootComponent extends React.Component {
 
@@ -25,27 +26,34 @@
                 id: details.id.videoId
             })
             socket.on('comments', (data) => {
+                console.log("COMNMENTS");
                 var comments = data.items;
+                if(comments.length) this.scrollToBottom();
                 var details = this.state;
-                details.comments = details.comments.concat(comments);
+                details.comments = comments.concat(details.comments)
                 this.setState({details})
-                // this.setState({
-                //     comments: this.state.comments.append(data.items)
-                // })
             })
             details.socket = socket;
             details.comments = [];
             this.state = details;
         }
 
+        scrollToBottom = () => {
+           this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+        }
 
         render() {
             console.log(this.state.details);
             var id = this.state.id ? this.state.id.videoId : '';
-            return (<div>
-                <iframe width="560" height="315" src={`https://www.youtube.com/embed/${id}?autoplay=1`} frameBorder="0" allowFullScreen></iframe>
-                <div>
-                {this.state.details && this.state.details.comments.map(comment => <div>{comment.snippet.displayMessage}</div>)}
+            return (<div className="container">
+                <div className="iframeWrapper">
+                    <iframe src={`https://www.youtube.com/embed/${id}?autoplay=1`} frameBorder="0" allowFullScreen></iframe>
+                </div>
+                <div className="commentsWrapper">
+                <div className="comments">
+                    <div className="scrollto" ref={(el) => { this.messagesEnd = el; }}></div>
+                    {this.state.details && this.state.details.comments.map(comment => <div>{comment.authorDetails.displayName}: {comment.snippet.displayMessage}</div>)}
+                </div>
                 </div>
             </div>);
         }
