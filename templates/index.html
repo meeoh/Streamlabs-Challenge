@@ -25,18 +25,28 @@
                 id: details.id.videoId
             })
             socket.on('comments', (data) => {
-                console.log(data);
+                var comments = data.items;
+                var details = this.state;
+                details.comments = details.comments.concat(comments);
+                this.setState({details})
+                // this.setState({
+                //     comments: this.state.comments.append(data.items)
+                // })
             })
             details.socket = socket;
+            details.comments = [];
             this.state = details;
         }
 
 
         render() {
-            // console.log(JSON.parse(this.props.topVid));
+            console.log(this.state.details);
             var id = this.state.id ? this.state.id.videoId : '';
             return (<div>
                 <iframe width="560" height="315" src={`https://www.youtube.com/embed/${id}?autoplay=1`} frameBorder="0" allowFullScreen></iframe>
+                <div>
+                {this.state.details && this.state.details.comments.map(comment => <div>{comment.snippet.displayMessage}</div>)}
+                </div>
             </div>);
         }
     }
