@@ -53,7 +53,8 @@ def getComments(id, youtube, credentials, pageToken=""):
   # insert comments['items'] into mongodb, only want author, display text, and current room id
   with app.app_context():
     if len(comments['items']):
-      mongo.db.comments.insert_many([{'text': comment['snippet']['displayMessage'], 'author': comment['authorDetails']['displayName'], 'channel': id} for comment in comments['items']])
+      mongo.db.comments.insert_many(
+        [{'text': comment['snippet']['displayMessage'], 'author': comment['authorDetails']['displayName'], 'publishedAt': comment['snippet']['publishedAt'], "channel": id} for comment in comments['items']])
   comments['items'] = list(reversed(comments['items']))
 
 
@@ -170,24 +171,10 @@ def index():
     type="video",
     videoEmbeddable="true"
   ).execute()
+
+  # wait for creds to expire and check if status is 403 or something
+  print(topVid)
   topVid = topVid['items'][0]
-  id = topVid['id']['videoId']
-
-  # liveStreamingInfo = youtube.videos().list(
-  #   part="liveStreamingDetails",
-  #   id=id
-  # ).execute()
-  # try:
-  #   liveStreamingInfo = liveStreamingInfo['items'][0]['liveStreamingDetails']['activeLiveChatId']
-  # except:
-  #   print("no livestreaming info")
-
-  # comments = youtube.liveChatMessages().list(
-  #   liveChatId=liveStreamingInfo,
-  #   part="snippet, authorDetails"
-  # ).execute()
-
-  # print(comments['items'][0]['authorDetails'])
 
   return render_template("index.html", topVid=json.dumps(topVid))
 

@@ -46,7 +46,7 @@
 
         scrollToBottom = () => {
             console.log(this.messagesEnd);
-            this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+            this.messagesEnd.scrollIntoView(true, { behavior: "smooth" });
         }
 
         handleChange(event) {
