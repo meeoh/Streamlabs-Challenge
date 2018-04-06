@@ -13,6 +13,7 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.0/socket.io.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
     <script type="text/babel">
+
     class RootComponent extends React.Component {
 
         constructor(props) {
@@ -35,27 +36,66 @@
             })
             details.socket = socket;
             details.comments = [];
+            details.searchUser = ""
+            details.searchResult = 0;
             this.state = details;
+
+            this.handleChange = this.handleChange.bind(this);
+            this.handleSubmit = this.handleSubmit.bind(this);
         }
 
         scrollToBottom = () => {
-           this.messagesEnd.scrollIntoView({ behavior: "smooth" });
+            console.log(this.messagesEnd);
+            this.messagesEnd.scrollIntoView({ behavior: "smooth" });
         }
 
+        handleChange(event) {
+            this.setState({searchUser: event.target.value});
+        }
+
+        handleSubmit(event) {
+            event.preventDefault();
+            fetch(`http://localhost:5000/comments/${this.state.searchUser}`)
+            .then(response => response.json())
+            .then(({comments}) => {
+                this.setState({searchResult: comments})
+            })
+            .catch(response => {
+                console.log(response);
+            })
+        }
+
+
         render() {
-            console.log(this.state.details);
             var id = this.state.id ? this.state.id.videoId : '';
-            return (<div className="container">
-                <div className="iframeWrapper">
-                    <iframe src={`https://www.youtube.com/embed/${id}?autoplay=1`} frameBorder="0" allowFullScreen></iframe>
+            return (
+                <div>
+                <div className="container">
+                    <div className="iframeWrapper">
+                        <iframe src={`https://www.youtube.com/embed/${id}?autoplay=1`} frameBorder="0" allowFullScreen></iframe>
+                    </div>
+                    <div className="commentsWrapper">
+                    <div className="comments">
+                        <div className="scrollto" ref={(el) => { this.messagesEnd = el; }}></div>
+                        {this.state.details && this.state.details.comments.map(comment => <div>{comment.authorDetails.displayName}: {comment.snippet.displayMessage}</div>)}
+                    </div>
+                    </div>
+
                 </div>
-                <div className="commentsWrapper">
-                <div className="comments">
-                    <div className="scrollto" ref={(el) => { this.messagesEnd = el; }}></div>
-                    {this.state.details && this.state.details.comments.map(comment => <div>{comment.authorDetails.displayName}: {comment.snippet.displayMessage}</div>)}
+
+                <div>
+                    <form onSubmit={this.handleSubmit}>
+                        <label>
+                            Name:
+                            <input type="text" value={this.state.searchUser} onChange={this.handleChange} />
+                        </label>
+                        <input type="submit" value="Submit" />
+                        <h3>{this.state.searchResult}</h3>
+                    </form>
                 </div>
+
                 </div>
-            </div>);
+            );
         }
     }
     ReactDOM.render(

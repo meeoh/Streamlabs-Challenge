@@ -5,7 +5,7 @@ import random
 import time
 
 from oauth2client.client import OAuth2WebServerFlow, AccessTokenCredentials
-from flask import Flask, render_template, session, request, redirect, url_for, abort, jsonify
+from flask import Flask, render_template, session, request, redirect, url_for, abort, jsonify, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 from keys import CLIENT_ID, CLIENT_SECRET
@@ -52,7 +52,8 @@ def getComments(id, youtube, credentials, pageToken=""):
   ).execute()
   # insert comments['items'] into mongodb, only want author, display text, and current room id
   with app.app_context():
-    mongo.db.comments.insert_many([{'text': comment['snippet']['displayMessage'], 'author': comment['authorDetails']['displayName'], 'channel': id} for comment in comments['items']])
+    if len(comments['items']):
+      mongo.db.comments.insert_many([{'text': comment['snippet']['displayMessage'], 'author': comment['authorDetails']['displayName'], 'channel': id} for comment in comments['items']])
   comments['items'] = list(reversed(comments['items']))
 
 
@@ -101,6 +102,16 @@ def on_join(data):
     thread1.start()
   else:
     activeRooms[id].append(credentials)
+
+@app.route('/comments/<username>')
+def getCommentCountForUser(username):
+  try:
+    print(username)
+    commentsCount = mongo.db.comments.count({"author": username})
+    return jsonify({'comments': commentsCount})
+  except Exception as e:
+    print(e)
+
 
 @app.route('/login')
 def login():
