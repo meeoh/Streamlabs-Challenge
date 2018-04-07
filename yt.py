@@ -16,6 +16,8 @@ CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 
 app = Flask(__name__)
+app.config['MONGO_DBNAME'] = 'yt'
+app.config['MONGO_URI'] = os.getenv('MONGOURL')
 app.secret_key = 'mysecretKEY'
 socketio = SocketIO(app)
 mongo = PyMongo(app)
