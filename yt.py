@@ -9,7 +9,6 @@ from oauth2client.client import OAuth2WebServerFlow, AccessTokenCredentials
 from flask import Flask, render_template, session, request, redirect, url_for, abort, jsonify, Response
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
-from keys import CLIENT_ID, CLIENT_SECRET
 from threading import Thread
 from flask_pymongo import PyMongo
 
