@@ -54,7 +54,7 @@
 
         handleSubmit(event) {
             event.preventDefault();
-            fetch(`https://streamlabs-challenge.com/comments/${this.state.searchUser}`)
+            fetch(`https://streamlabs-challenge.herokuapp.com/comments/${this.state.searchUser}`)
             .then(response => response.json())
             .then(({comments}) => {
                 this.setState({searchResult: comments})
