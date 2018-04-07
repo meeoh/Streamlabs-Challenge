@@ -121,7 +121,7 @@ def login():
   flow = OAuth2WebServerFlow(client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     scope='https://www.googleapis.com/auth/youtube',
-    redirect_uri='http://localhost:5000/oauth2callback',
+    redirect_uri='https://streamlabs-challenge.com/oauth2callback',
     approval_prompt='force',
     access_type='offline')
 
