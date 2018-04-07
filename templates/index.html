@@ -29,10 +29,9 @@
             socket.on('comments', (data) => {
                 console.log("COMNMENTS");
                 var comments = data.items;
-                if(comments.length) this.scrollToBottom();
                 var details = this.state;
                 details.comments = comments.concat(details.comments)
-                this.setState({details})
+                this.setState({details}, () => comments.length ? this.scrollToBottom() : null);
             })
             details.socket = socket;
             details.comments = [];
@@ -45,12 +44,12 @@
         }
 
         scrollToBottom = () => {
-            console.log(this.messagesEnd);
-            this.messagesEnd.scrollIntoView(true, { behavior: "smooth" });
+            if(window.innerWidth > 760)
+                this.messagesEnd.scrollIntoView(true, { behavior: "smooth" });
         }
 
         handleChange(event) {
-            this.setState({searchUser: event.target.value});
+            this.setState({searchUser: event.target.value, searchResult: 0});
         }
 
         handleSubmit(event) {
@@ -83,14 +82,14 @@
 
                 </div>
 
-                <div>
+                <div className="search">
                     <form onSubmit={this.handleSubmit}>
                         <label>
-                            Name:
+                            Search messages by user:
                             <input type="text" value={this.state.searchUser} onChange={this.handleChange} />
                         </label>
                         <input type="submit" value="Submit" />
-                        <h3>{this.state.searchResult}</h3>
+                        <p># Of messages by {this.state.searchUser}: {this.state.searchResult}</p>
                     </form>
                 </div>
 

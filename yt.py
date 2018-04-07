@@ -164,16 +164,18 @@ def index():
   http = httplib2.Http()
   http = credentials.authorize(http)
 
-  youtube = build("youtube", "v3", http=http)
-  topVid = youtube.search().list(
-    part="snippet",
-    eventType="live",
-    type="video",
-    videoEmbeddable="true"
-  ).execute()
-
-  # wait for creds to expire and check if status is 403 or something
-  print(topVid)
+  topVid = None
+  try:
+    youtube = build("youtube", "v3", http=http)
+    topVid = youtube.search().list(
+      part="snippet",
+      eventType="live",
+      type="video",
+      videoEmbeddable="true"
+    ).execute()
+  except Exception as e:
+    return redirect(url_for('login'))
+    
   topVid = topVid['items'][0]
 
   return render_template("index.html", topVid=json.dumps(topVid))
