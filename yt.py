@@ -3,6 +3,7 @@ from apiclient.discovery import build_from_document, build
 import httplib2
 import random
 import time
+import os
 
 from oauth2client.client import OAuth2WebServerFlow, AccessTokenCredentials
 from flask import Flask, render_template, session, request, redirect, url_for, abort, jsonify, Response
@@ -12,6 +13,8 @@ from keys import CLIENT_ID, CLIENT_SECRET
 from threading import Thread
 from flask_pymongo import PyMongo
 
+CLIENT_ID = os.getenv('CLIENT_ID')
+CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 
 app = Flask(__name__)
 app.secret_key = 'mysecretKEY'
